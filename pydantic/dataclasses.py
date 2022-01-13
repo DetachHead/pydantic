@@ -1,3 +1,4 @@
+import sys
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, TypeVar, Union, overload
 
 from .class_validators import gather_all_validators
@@ -115,6 +116,7 @@ def _process_class(
     unsafe_hash: bool,
     frozen: bool,
     config: Optional[Type[Any]],
+    kw_only: bool,
 ) -> Type['Dataclass']:
     import dataclasses
 
@@ -156,8 +158,14 @@ def _process_class(
         globals()[uniq_class_name] = _cls
     else:
         _cls.__post_init__ = _pydantic_post_init
-    cls: Type['Dataclass'] = dataclasses.dataclass(  # type: ignore
-        _cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen
+    cls: Type['Dataclass'] = (
+        dataclasses.dataclass(  # type: ignore
+            _cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen, kw_only=kw_only
+        )
+        if sys.version_info >= (3, 10)
+        else dataclasses.dataclass(  # type: ignore
+            _cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen
+        )
     )
     cls.__processed__ = ClassAttribute('__processed__', True)
 
@@ -199,60 +207,124 @@ def _process_class(
     return cls
 
 
-@overload
-def dataclass(
-    *,
-    init: bool = True,
-    repr: bool = True,
-    eq: bool = True,
-    order: bool = False,
-    unsafe_hash: bool = False,
-    frozen: bool = False,
-    config: Type[Any] = None,
-) -> Callable[[Type[Any]], Type['Dataclass']]:
-    ...
+# https://github.com/python/mypy/pull/10712
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 10):
 
+        @overload
+        def dataclass(
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool = False,
+            frozen: bool = False,
+            config: Type[Any] = None,
+            kw_only: bool = ...,
+        ) -> Callable[[Type[Any]], Type['Dataclass']]:
+            ...
 
-@overload
-def dataclass(
-    _cls: Type[Any],
-    *,
-    init: bool = True,
-    repr: bool = True,
-    eq: bool = True,
-    order: bool = False,
-    unsafe_hash: bool = False,
-    frozen: bool = False,
-    config: Type[Any] = None,
-) -> Type['Dataclass']:
-    ...
+        @overload
+        def dataclass(
+            _cls: Type[Any],
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool = False,
+            frozen: bool = False,
+            config: Type[Any] = None,
+            kw_only: bool = ...,
+        ) -> Type['Dataclass']:
+            ...
 
+        def dataclass(
+            _cls: Optional[Type[Any]] = None,
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool = False,
+            frozen: bool = False,
+            config: Type[Any] = None,
+            kw_only: bool = False,
+        ) -> Union[Callable[[Type[Any]], Type['Dataclass']], Type['Dataclass']]:
+            ...
 
-def dataclass(
-    _cls: Optional[Type[Any]] = None,
-    *,
-    init: bool = True,
-    repr: bool = True,
-    eq: bool = True,
-    order: bool = False,
-    unsafe_hash: bool = False,
-    frozen: bool = False,
-    config: Type[Any] = None,
-) -> Union[Callable[[Type[Any]], Type['Dataclass']], Type['Dataclass']]:
-    """
-    Like the python standard lib dataclasses but with type validation.
+    else:
 
-    Arguments are the same as for standard dataclasses, except for validate_assignment which has the same meaning
-    as Config.validate_assignment.
-    """
+        @overload
+        def dataclass(
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool = False,
+            frozen: bool = False,
+            config: Type[Any] = None,
+        ) -> Callable[[Type[Any]], Type['Dataclass']]:
+            ...
 
-    def wrap(cls: Type[Any]) -> Type['Dataclass']:
-        return _process_class(cls, init, repr, eq, order, unsafe_hash, frozen, config)
+        @overload
+        def dataclass(
+            _cls: Type[Any],
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool = False,
+            frozen: bool = False,
+            config: Type[Any] = None,
+        ) -> Type['Dataclass']:
+            ...
 
-    if _cls is None:
-        return wrap
+        def dataclass(
+            _cls: Optional[Type[Any]] = None,
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool = False,
+            frozen: bool = False,
+            config: Type[Any] = None,
+            kw_only: bool = False,
+        ) -> Union[Callable[[Type[Any]], Type['Dataclass']], Type['Dataclass']]:
+            ...
 
-    return wrap(_cls)
+else:
+
+    def dataclass(
+        _cls: Optional[Type[Any]] = None,
+        *,
+        init: bool = True,
+        repr: bool = True,
+        eq: bool = True,
+        order: bool = False,
+        unsafe_hash: bool = False,
+        frozen: bool = False,
+        config: Type[Any] = None,
+        kw_only: bool = False,
+    ) -> Union[Callable[[Type[Any]], Type['Dataclass']], Type['Dataclass']]:
+        """
+        Like the python standard lib dataclasses but with type validation.
+
+        Arguments are the same as for standard dataclasses, except for validate_assignment which has the same meaning
+        as Config.validate_assignment.
+        """
+
+        def wrap(cls: Type[Any]) -> Type['Dataclass']:
+            return _process_class(cls, init, repr, eq, order, unsafe_hash, frozen, config, kw_only)
+
+        if _cls is None:
+            return wrap
+
+        return wrap(_cls)
 
 
 def make_dataclass_validator(_cls: Type[Any], config: Type['BaseConfig']) -> 'CallableGenerator':
