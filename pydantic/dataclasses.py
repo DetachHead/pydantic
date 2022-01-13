@@ -115,6 +115,7 @@ def _process_class(
     unsafe_hash: bool,
     frozen: bool,
     config: Optional[Type[Any]],
+    kw_only: bool
 ) -> Type['Dataclass']:
     import dataclasses
 
@@ -157,7 +158,7 @@ def _process_class(
     else:
         _cls.__post_init__ = _pydantic_post_init
     cls: Type['Dataclass'] = dataclasses.dataclass(  # type: ignore
-        _cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen
+        _cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen, kw_only=kw_only
     )
     cls.__processed__ = ClassAttribute('__processed__', True)
 
@@ -223,6 +224,7 @@ def dataclass(
     unsafe_hash: bool = False,
     frozen: bool = False,
     config: Type[Any] = None,
+    kw_only: bool = ...
 ) -> Callable[[Type[Any]], Type['Dataclass']]:
     ...
 
@@ -238,6 +240,7 @@ def dataclass(
     unsafe_hash: bool = False,
     frozen: bool = False,
     config: Type[Any] = None,
+    kw_only: bool = ...
 ) -> Type['Dataclass']:
     ...
 
@@ -252,6 +255,7 @@ def dataclass(
     unsafe_hash: bool = False,
     frozen: bool = False,
     config: Type[Any] = None,
+    kw_only: bool = False
 ) -> Union[Callable[[Type[Any]], Type['Dataclass']], Type['Dataclass']]:
     """
     Like the python standard lib dataclasses but with type validation.
@@ -261,7 +265,7 @@ def dataclass(
     """
 
     def wrap(cls: Type[Any]) -> Type['Dataclass']:
-        return _process_class(cls, init, repr, eq, order, unsafe_hash, frozen, config)
+        return _process_class(cls, init, repr, eq, order, unsafe_hash, frozen, config, kw_only)
 
     if _cls is None:
         return wrap
