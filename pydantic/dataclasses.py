@@ -98,6 +98,7 @@ def dataclass(
     frozen: bool = False,
     config: Union[ConfigDict, Type[Any], None] = None,
     validate_on_init: Optional[bool] = None,
+    kw_only: bool = ...
 ) -> Callable[[Type[Any]], 'DataclassClassOrWrapper']:
     ...
 
@@ -115,6 +116,7 @@ def dataclass(
     frozen: bool = False,
     config: Union[ConfigDict, Type[Any], None] = None,
     validate_on_init: Optional[bool] = None,
+    kw_only: bool = ...
 ) -> 'DataclassClassOrWrapper':
     ...
 
@@ -131,6 +133,7 @@ def dataclass(
     frozen: bool = False,
     config: Union[ConfigDict, Type[Any], None] = None,
     validate_on_init: Optional[bool] = None,
+    kw_only: bool = ...
 ) -> Union[Callable[[Type[Any]], 'DataclassClassOrWrapper'], 'DataclassClassOrWrapper']:
     """
     Like the python standard lib dataclasses but with type validation.
@@ -150,7 +153,7 @@ def dataclass(
         else:
             dc_cls_doc = cls.__doc__ or ''  # needs to be done before generating dataclass
             dc_cls = dataclasses.dataclass(  # type: ignore
-                cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen
+                cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen, kw_only=kw_only
             )
             default_validate_on_init = True
 
