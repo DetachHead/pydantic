@@ -1,5 +1,6 @@
 import dataclasses
 import pickle
+import sys
 from collections.abc import Hashable
 from datetime import datetime
 from pathlib import Path
@@ -989,3 +990,17 @@ def test_keeps_custom_properties():
         instance = cls(a=test_string)
         assert instance._special_property == 1
         assert instance.a == test_string
+
+
+if sys.version_info >= (3, 10):
+
+    def test_kw_only():
+        @pydantic.dataclasses.dataclass(kw_only=True)
+        class A:
+            a: int | None = None
+            b: str
+
+        with pytest.raises(TypeError):
+            A(1, '')
+
+        assert A(b='hi').b == 'hi'
