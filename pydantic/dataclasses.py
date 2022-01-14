@@ -160,7 +160,7 @@ def _process_class(
         _cls.__post_init__ = _pydantic_post_init
     cls: Type['Dataclass']
     if sys.version_info >= (3, 10):
-        cls = dataclasses.dataclass(  # type: ignore
+        cls = dataclasses.dataclass(
             _cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen, kw_only=kw_only
         )
     else:
