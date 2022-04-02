@@ -1,6 +1,7 @@
 import importlib
 import os
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -49,7 +50,26 @@ executable_modules = list({fname[:-3] for _, fname, out_fname in cases if out_fn
 def test_mypy_results(config_filename: str, python_filename: str, output_filename: str) -> None:
     full_config_filename = f'tests/mypy/configs/{config_filename}'
     full_filename = f'tests/mypy/modules/{python_filename}'
-    output_path = None if output_filename is None else Path(f'tests/mypy/outputs/{output_filename}')
+
+    if output_filename is None:
+        output_path = None
+    else:
+        # check for python version specific output files
+        # eg. if there's an "outputs/plugin-fail.txt" and a "outputs/python3.10/plugin-fail.txt" then use the 3.10 one
+        # if the current python version is >= 3.10
+        root_output_dir = 'tests/mypy/outputs'
+        for child in os.listdir(root_output_dir):
+            output_dir = os.path.join(root_output_dir, child)
+            if (
+                os.path.isdir(output_dir)
+                and sys.version_info >= tuple(map(int, re.match(r'^python(\d+)\.(\d+)$', child).groups()))
+                and Path(output_dir, output_filename).exists()
+            ):
+                break
+        else:
+            output_dir = root_output_dir
+
+        output_path = Path(f'{output_dir}/{output_filename}')
 
     # Specifying a different cache dir for each configuration dramatically speeds up subsequent execution
     # It also prevents cache-invalidation-related bugs in the tests
