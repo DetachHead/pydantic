@@ -22,7 +22,7 @@ if TYPE_CHECKING:
         __processed__: Optional[ClassAttribute]
         __has_field_info_default__: bool  # whether or not a `pydantic.Field` is used as default value
 
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
+        def __init__(self, *args: object, **kwargs: object) -> None:
             pass
 
         @classmethod
@@ -214,6 +214,8 @@ def _process_class(
     return cls
 
 
+T = TypeVar("T")
+
 @overload
 def dataclass(
     *,
@@ -223,15 +225,15 @@ def dataclass(
     order: bool = False,
     unsafe_hash: bool = False,
     frozen: bool = False,
-    config: Type[Any] = None,
-    kw_only: bool = ...
-) -> Callable[[Type[Any]], Type['Dataclass']]:
+    config: Type[object] = None,
+    kw_only: bool = ...,
+) -> Callable[[Type[T]], Type["Dataclass"]]:
     ...
 
 
 @overload
 def dataclass(
-    _cls: Type[Any],
+    _cls: Type[T],
     *,
     init: bool = True,
     repr: bool = True,
@@ -239,14 +241,14 @@ def dataclass(
     order: bool = False,
     unsafe_hash: bool = False,
     frozen: bool = False,
-    config: Type[Any] = None,
-    kw_only: bool = ...
-) -> Type['Dataclass']:
+    config: Type[object] = None,
+    kw_only: bool = ...,
+) -> Type["Dataclass"]:
     ...
 
 
 def dataclass(
-    _cls: Optional[Type[Any]] = None,
+    _cls: Optional[Type[T]] = None,
     *,
     init: bool = True,
     repr: bool = True,
@@ -255,8 +257,8 @@ def dataclass(
     unsafe_hash: bool = False,
     frozen: bool = False,
     config: Type[Any] = None,
-    kw_only: bool = False
-) -> Union[Callable[[Type[Any]], Type['Dataclass']], Type['Dataclass']]:
+    kw_only: bool = False,
+) -> Union[Callable[[Type[T]], Type["Dataclass"]], Type["Dataclass"]]:
     """
     Like the python standard lib dataclasses but with type validation.
 
